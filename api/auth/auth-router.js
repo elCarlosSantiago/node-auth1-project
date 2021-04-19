@@ -1,54 +1,31 @@
 const router = require('express').Router();
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
+const { add } = require('../users/users-model');
 const {
   checkPasswordLength,
   checkUsernameExists,
   checkUsernameFree,
 } = require('./auth-middleware');
 
-/**
-  1 [POST] /api/auth/register { "username": "sue", "password": "1234" }
-
-  response:
-  status 200
-  {
-    "user_id": 2,
-    "username": "sue"
+router.post(
+  '/register',
+  checkPasswordLength,
+  checkUsernameFree,
+  async (req, res, next) => {
+    const { username, password } = req.body;
+    const hash = bcrypt.hashSync(password, 10);
+    try {
+      const newUser = await add({ username, password: hash });
+      res.json(newUser);
+    } catch (err) {
+      next(err);
+    }
   }
+);
 
-  response on username taken:
-  status 422
-  {
-    "message": "Username taken"
-  }
-
-  response on password three chars or less:
-  status 422
-  {
-    "message": "Password must be longer than 3 chars"
-  }
- */
-
-router.post('/register', checkUsernameFree,(req, res, next) => {
- res.json('register post')
+router.post('/login', checkUsernameExists, (req, res) => {
+  res.json({ message: `Welcome ${req.body.username}` });
 });
-
-/**
- 2 [POST] /api/auth/login { "username": "sue", "password": "1234" }
- 
- response:
- status 200
- {
-   "message": "Welcome sue!"
-  }
-  
-  response on invalid credentials:
-  status 401
-  {
-    "message": "Invalid credentials"
-  }
-  */
-router.post('/login', (req, res, next) => {});
 
 /**
   3 [GET] /api/auth/logout
